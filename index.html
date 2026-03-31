@@ -9,16 +9,8 @@
     
     <style>
         #bottone-scatto {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 999;
-            padding: 15px 25px;
-            background: white;
-            border: 2px solid black;
-            border-radius: 50px;
-            font-weight: bold;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 999; padding: 15px; background: white; border-radius: 50px;
         }
     </style>
 </head>
@@ -29,40 +21,43 @@
 
     <a-scene embedded 
              renderer="preserveDrawingBuffer: true;" 
-             arjs="sourceType: webcam; videoTexture: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;">
+             arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;">
 
         <a-assets>
             <a-asset-item id="modello-1" src="man.glb"></a-asset-item>
         </a-assets>
 
         <a-marker type="barcode" value="1">
-            <a-entity 
-                gltf-model="#modello-1" 
-                scale="3 3 3" 
-                position="0 0 0" 
-                rotation="0 90 0">
-            </a-entity>
+            <a-entity gltf-model="#modello-1" scale="3 3 3" position="0 0 0" rotation="0 90 0"></a-entity>
         </a-marker>
 
         <a-entity camera></a-entity>
-
     </a-scene>
 
     <script>
         document.getElementById('bottone-scatto').addEventListener('click', function() {
-            // Seleziona il canvas di A-Frame
-            var canvas = document.querySelector('canvas.a-canvas');
-            
-            // Cattura l'immagine
-            var dataURL = canvas.toDataURL("image/png");
-            
-            // Crea il download
-            var link = document.createElement('a');
+            const scene = document.querySelector('a-scene');
+            const video = document.querySelector('#arjs-video');
+            const canvasAR = scene.canvas;
+
+            // 1. Creiamo un canvas "invisibile" per unire i pezzi
+            const fotoCanvas = document.createElement('canvas');
+            fotoCanvas.width = canvasAR.width;
+            fotoCanvas.height = canvasAR.height;
+            const ctx = fotoCanvas.getContext('2d');
+
+            // 2. Disegniamo prima la webcam (lo sfondo)
+            ctx.drawImage(video, 0, 0, fotoCanvas.width, fotoCanvas.height);
+
+            // 3. Disegniamo sopra il modello 3D (A-Frame)
+            ctx.drawImage(canvasAR, 0, 0, fotoCanvas.width, fotoCanvas.height);
+
+            // 4. Scarichiamo il risultato
+            const link = document.createElement('a');
             link.download = "foto-ar.png";
-            link.href = dataURL;
+            link.href = fotoCanvas.toDataURL("image/png");
             link.click();
         });
     </script>
-
 </body>
 </html>
