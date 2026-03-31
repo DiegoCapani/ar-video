@@ -3,16 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Art - Perfect Capture</title>
+    <title>AR Art - Full Screen & Perfect Capture</title>
     
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #arjs-video { object-fit: cover !important; width: 100vw !important; height: 100vh !important; }
+        /* FORZA IL FULL SCREEN TOTALE */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
 
-        /* Pulsante Scatto Foto UI */
+        /* Questo corregge il video della webcam per riempire lo schermo senza bande nere */
+        #arjs-video {
+            object-fit: cover !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Pulsante Scatto */
         #btn-foto {
             position: fixed;
             bottom: 30px;
@@ -26,25 +43,14 @@
             z-index: 10000;
             cursor: pointer;
             box-shadow: 0 0 20px rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             -webkit-tap-highlight-color: transparent;
         }
 
-        #btn-foto:active {
-            background: #ff4444;
-            transform: translateX(-50%) scale(0.9);
-        }
+        #btn-foto:active { background: #ff4444; transform: translateX(-50%) scale(0.9); }
 
-        /* Indicatore di caricamento/scatto */
         #flash {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: white;
-            opacity: 0;
-            z-index: 10001;
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; z-index: 10001; pointer-events: none;
         }
     </style>
 </head>
@@ -57,8 +63,13 @@
     <a-scene 
         embedded 
         vr-mode-ui="enabled: false"
-        renderer="preserveDrawingBuffer: true; antialias: true; alpha: true; logarithmicDepthBuffer: true; colorManagement: true;"
-        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;">
+        renderer="preserveDrawingBuffer: true; antialias: true; alpha: true; logarithmicDepthBuffer: true;"
+        arjs="sourceType: webcam; 
+              detectionMode: mono_and_matrix; 
+              matrixCodeType: 3x3; 
+              debugUIEnabled: false; 
+              sourceWidth:1280; sourceHeight:720; 
+              displayWidth:1280; displayHeight:720;">
 
         <a-assets>
             <img id="mio-png" src="man1.png" crossorigin="anonymous">
@@ -81,57 +92,53 @@
         const btn = document.querySelector('#btn-foto');
         const flash = document.querySelector('#flash');
 
+        // Funzione per ridimensionare correttamente AR.js al cambio orientamento
+        window.addEventListener('resize', function() {
+            const scene = document.querySelector('a-scene');
+            scene.setAttribute('arjs', 'sourceWidth: ' + window.innerWidth + '; sourceHeight: ' + window.innerHeight + ';');
+        });
+
         btn.addEventListener('click', function() {
             const scene = document.querySelector('a-scene');
             const video = document.querySelector('#arjs-video');
             
             if (!video) return;
 
-            // 1. Creiamo il canvas master con la risoluzione nativa del video
             const finalCanvas = document.createElement('canvas');
             finalCanvas.width = video.videoWidth;
             finalCanvas.height = video.videoHeight;
             const ctx = finalCanvas.getContext('2d');
 
-            // --- EFFETTO FLASH VISIVO ---
             flash.style.opacity = "1";
             setTimeout(() => { flash.style.opacity = "0"; }, 100);
 
-            // 2. Disegniamo lo sfondo (Webcam)
             ctx.drawImage(video, 0, 0, finalCanvas.width, finalCanvas.height);
 
-            // 3. CALCOLO CENTRATURA (Risolve il problema del decentramento a sinistra)
             const vWidth = video.videoWidth;
             const vHeight = video.videoHeight;
             const cWidth = scene.canvas.clientWidth;
             const cHeight = scene.canvas.clientHeight;
 
-            // Calcoliamo come scalare il canvas virtuale per farlo coincidere col video
             const scale = Math.max(vWidth / cWidth, vHeight / cHeight);
             const xOffset = (vWidth - cWidth * scale) / 2;
             const yOffset = (vHeight - cHeight * scale) / 2;
 
-            // 4. Forza il rendering della scena 3D (PNG)
             scene.renderer.render(scene.object3D, scene.camera);
 
-            // 5. Sovrapponiamo il livello AR centrato
             ctx.drawImage(
                 scene.canvas, 
-                0, 0, scene.canvas.width, scene.canvas.height, // Sorgente (tutto il canvas AR)
-                xOffset, yOffset, cWidth * scale, cHeight * scale // Destinazione (centrata e scalata)
+                0, 0, scene.canvas.width, scene.canvas.height, 
+                xOffset, yOffset, cWidth * scale, cHeight * scale 
             );
 
-            // 6. Salvataggio immagine
             try {
                 const dataURL = finalCanvas.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = `AR_Artwork_${Date.now()}.png`;
-                // Metodo di download forzato per mobile
+                link.download = `AR_Art_Full_${Date.now()}.png`;
                 link.href = dataURL.replace("image/png", "image/octet-stream");
                 link.click();
             } catch (err) {
-                console.error("Errore salvataggio:", err);
-                alert("Errore durante il salvataggio. Controlla i permessi del browser.");
+                console.error(err);
             }
         });
     </script>
