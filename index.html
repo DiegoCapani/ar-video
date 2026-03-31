@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Hologram - Fix Photo</title>
+    <title>AR Hologram - Final Photo Fix</title>
     
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
@@ -12,13 +12,14 @@
         body { margin: 0; overflow: hidden; background-color: #000; }
         #arjs-video { object-fit: cover !important; width: 100vw !important; height: 100vh !important; }
 
+        /* Pulsante Scatto */
         #btn-foto {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 70px; height: 70px; background: white;
-            border-radius: 50%; border: 5px solid rgba(0,0,0,0.3);
-            z-index: 9999; cursor: pointer;
+            width: 75px; height: 75px; background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%; border: 4px solid #fff;
+            z-index: 10000; cursor: pointer; box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        #btn-foto:active { background: #ff0000; }
+        #btn-foto:active { background: #ff4444; transform: translateX(-50%) scale(0.9); }
     </style>
 </head>
 
@@ -28,7 +29,7 @@
 
     <a-scene embedded 
              vr-mode-ui="enabled: false"
-             renderer="preserveDrawingBuffer: true; antialias: true; alpha: true;"
+             renderer="preserveDrawingBuffer: true; alpha: true; logarithmicDepthBuffer: true;"
              arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;">
 
         <a-assets>
@@ -41,10 +42,10 @@
 
         <a-marker type="barcode" value="2">
             <a-plane 
-                id="target-plane"
+                id="plane-ologramma"
                 src="#ologrammaVideo" 
                 position="0 1 0" 
-                rotation="0 90 0" 
+                rotation="9 0 0" 
                 width="1.2" height="2.1" 
                 material="shader: flat; blending: additive; transparent: true; side: double;">
             </a-plane>
@@ -54,34 +55,43 @@
     </a-scene>
 
     <script>
-        const videoOlogramma = document.querySelector('#ologrammaVideo');
-        const btnFoto = document.querySelector('#btn-foto');
+        const video = document.querySelector('#ologrammaVideo');
+        const btn = document.querySelector('#btn-foto');
 
-        // Assicuriamoci che il video parta
-        window.addEventListener('click', () => { videoOlogramma.play(); }, {once: true});
+        // Assicura il play al primo tocco
+        window.addEventListener('touchstart', () => { video.play(); }, {once: true});
 
-        btnFoto.addEventListener('click', function() {
-            const sceneEl = document.querySelector('a-scene');
-            const webcamVideo = document.querySelector('#arjs-video');
+        btn.addEventListener('click', function() {
+            const scene = document.querySelector('a-scene');
+            const webcam = document.querySelector('#arjs-video');
             
-            // Creiamo il canvas per il merge
-            const canvas = document.createElement('canvas');
-            canvas.width = webcamVideo.clientWidth;
-            canvas.height = webcamVideo.clientHeight;
-            const ctx = canvas.getContext('2d');
+            // Creiamo un canvas finale della stessa dimensione della webcam
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = webcam.videoWidth;
+            finalCanvas.height = webcam.videoHeight;
+            const ctx = finalCanvas.getContext('2d');
 
-            // 1. Disegna la webcam
-            ctx.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
+            // 1. Disegniamo lo sfondo (la webcam fisica)
+            ctx.drawImage(webcam, 0, 0, finalCanvas.width, finalCanvas.height);
 
-            // 2. Disegna il contenuto di A-Frame (l'ologramma)
-            // Usiamo direttamente il canvas della scena per assicurarci di vedere il video applicato
-            ctx.drawImage(sceneEl.canvas, 0, 0, canvas.width, canvas.height);
+            // 2. Forza il rendering di A-Frame per assicurarsi che il video sia catturato
+            scene.renderer.render(scene.object3D, scene.camera);
 
-            // 3. Salvataggio
-            const link = document.createElement('a');
-            link.download = 'installazione-ar-' + Date.now() + '.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+            // 3. Disegniamo l'ologramma sopra lo sfondo
+            // Usiamo il canvas di A-Frame (che ha preserveDrawingBuffer: true)
+            ctx.drawImage(scene.canvas, 0, 0, finalCanvas.width, finalCanvas.height);
+
+            // 4. Trasformiamo in immagine e scarichiamo
+            try {
+                const dataURL = finalCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `AR_Art_${Date.now()}.png`;
+                link.href = dataURL;
+                link.click();
+            } catch (err) {
+                console.error("Errore nello scatto. Potrebbe essere un problema di permessi CORS del video.", err);
+                alert("Errore: il video non permette la cattura. Controlla che il file sia su GitHub Pages correttamente.");
+            }
         });
     </script>
 </body>
