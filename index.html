@@ -3,62 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR PNG Capture - Diego Capani</title>
+    <title>AR PNG Final Fix - Diego Capani</title>
     
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <style>
         body { margin: 0; overflow: hidden; background: #000; }
-        
-        /* Pulsante Scatto Foto UI */
-        #controls {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-        }
+        #arjs-video { object-fit: cover !important; width: 100vw !important; height: 100vh !important; }
 
-        .btn-capture {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: white;
-            border: 5px solid rgba(0,0,0,0.2);
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-            cursor: pointer;
+        /* Pulsante Scatto Grande e Facile da Premere */
+        #btn-foto {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 80px; height: 80px; background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%; border: 6px solid #fff;
+            z-index: 10000; cursor: pointer;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            -webkit-tap-highlight-color: transparent; /* Rimuove aloni su touch */
         }
-
-        .btn-capture:active {
-            transform: scale(0.9);
-            background: #eee;
-        }
+        #btn-foto:active { background: #ff4444; transform: translateX(-50%) scale(0.9); }
     </style>
 </head>
 
 <body style="margin: 0px; overflow: hidden;">
 
-    <div id="controls">
-        <div class="btn-capture" id="shutter"></div>
-    </div>
+    <div id="btn-foto"></div>
 
-    <a-scene 
-        embedded 
-        vr-mode-ui="enabled: false"
-        renderer="preserveDrawingBuffer: true; alpha: true;"
-        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;">
+    <a-scene embedded 
+             vr-mode-ui="enabled: false"
+             renderer="preserveDrawingBuffer: true; antialias: true; alpha: true; logarithmicDepthBuffer: true;"
+             arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false;">
 
         <a-assets>
-            <img id="mio-png" src="man1.png" crossorigin="anonymous">
+            <img id="mio-png" src="./assets/immagine.png" crossorigin="anonymous">
         </a-assets>
 
         <a-marker type="barcode" value="1">
             <a-image 
                 src="#mio-png" 
-                scale="8 8 8" 
+                scale="10 10 10" 
                 position="0 0.1 0" 
-                rotation="0 0 0"
+                rotation="0 90 0"
                 material="transparent: true; alphaTest: 0.5; shader: flat; side: double;">
             </a-image>
         </a-marker>
@@ -67,33 +52,49 @@
     </a-scene>
 
     <script>
-        const shutter = document.getElementById('shutter');
-        
-        shutter.addEventListener('click', function() {
+        const btn = document.querySelector('#btn-foto');
+
+        btn.addEventListener('click', function() {
             const scene = document.querySelector('a-scene');
             const video = document.querySelector('#arjs-video');
             
-            // Creiamo un canvas per unire Webcam + PNG
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
+            if (!video) {
+                alert("Errore: Webcam non trovata");
+                return;
+            }
 
-            // 1. Disegna il frame della Webcam
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // Creiamo un canvas "master" per unire i due mondi
+            const masterCanvas = document.createElement('canvas');
+            // Usiamo le dimensioni reali della webcam (non dello schermo)
+            masterCanvas.width = video.videoWidth;
+            masterCanvas.height = video.videoHeight;
+            const ctx = masterCanvas.getContext('2d');
 
-            // 2. Disegna sopra il contenuto di A-Frame (il tuo PNG nel mondo AR)
-            // Nota: Usiamo il canvas generato da A-Frame
-            ctx.drawImage(scene.canvas, 0, 0, canvas.width, canvas.height);
+            try {
+                // 1. Disegniamo lo sfondo (La Webcam reale)
+                ctx.drawImage(video, 0, 0, masterCanvas.width, masterCanvas.height);
 
-            // 3. Genera il download dell'immagine
-            const dataURL = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `AR_Snapshot_${Date.now()}.png`;
-            link.href = dataURL;
-            link.click();
+                // 2. Forza il rendering della scena virtuale (L'ologramma PNG)
+                // Questo comando dice alla GPU: "Congela questo frame, ora!"
+                scene.renderer.render(scene.object3D, scene.camera);
+
+                // 3. Sovrapponi il PNG virtuale sopra lo sfondo reale
+                // Usiamo il canvas interno di A-Frame
+                ctx.drawImage(scene.canvas, 0, 0, masterCanvas.width, masterCanvas.height);
+
+                // 4. Salva e Download (Metodo ottimizzato per Mobile)
+                const dataURL = masterCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.setAttribute('download', `Diego_AR_Capture_${Date.now()}.png`);
+                // Forziamo il download anche su Safari e Android Chrome
+                link.setAttribute('href', dataURL.replace("image/png", "image/octet-stream"));
+                link.click();
+
+            } catch (err) {
+                console.error("Errore nello scatto fotografico:", err);
+                alert("Errore tecnico durante il salvataggio. Riprova.");
+            }
         });
     </script>
-
 </body>
 </html>
