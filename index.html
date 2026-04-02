@@ -62,14 +62,16 @@ smoothThreshold="5">
 <a-light type="ambient" intensity="1.3"></a-light>
 <a-light type="directional" position="1 3 2" intensity="1"></a-light>
 
-<a-entity
-id="personaggio"
-gltf-model="#artista"
-animation-mixer
-position="0 -2 0"
-scale="20 20 20"
-look-at="[camera]">
-</a-entity>
+<a-entity id="wrapper" rotation="-90 0 0"> 
+        <a-entity
+            id="personaggio"
+            gltf-model="#artista"
+            animation-mixer
+            position="0 0 0"
+            scale="25 25 25" 
+            look-at="#main-camera">
+        </a-entity>
+    </a-entity>
 
 </a-marker>
 
