@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Selfie - Quadro Fisso</title>
+    <title>AR Selfie - Flash e Suono</title>
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
 
     <style>
         body { margin:0; overflow:hidden; font-family:sans-serif; }
@@ -21,13 +22,19 @@
             font-size:120px; color:white; text-shadow:0 0 20px black;
             font-weight: bold; z-index:1000; display:none; pointer-events: none;
         }
+
+        /* STILE PER IL FLASH */
         #flash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; opacity: 0; z-index: 1001; pointer-events: none;
         }
-        .flash-active { animation: flashAnim 0.3s ease-out; }
+        .flash-active {
+            animation: flashAnim 0.3s ease-out;
+        }
         @keyframes flashAnim {
-            0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; }
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
         }
     </style>
 </head>
@@ -55,28 +62,39 @@
         <img id="posa6" src="assets/luzzetti6.png" crossorigin="anonymous">
     </a-assets>
 
-<a-marker preset="hiro" keep-visible id="marker">
-    <a-entity id="wrapper" rotation="0 0 0">
-        <a-plane
-            id="personaggio"
-            src="#posa1"
-            position="0 0 0" 
-            rotation="-90 0 0" 
-            width="15" 
-            height="15"
-            transparent="true"
-            alpha-test="0.5"
-            shader="flat">
-        </a-plane>
-    </a-entity>
-</a-marker>
+    <a-marker preset="hiro" keep-visible id="marker">
+        <a-entity id="wrapper" rotation="0 0 0">
+            <a-plane
+                id="personaggio"
+                src="#posa1"
+                position="0 0 -0.5" 
+                width="15" 
+                height="15"
+                transparent="true"
+                alpha-test="0.5"
+                shader="flat"
+                vertical-look-at>
+            </a-plane>
+        </a-entity>
+    </a-marker>
 
-    <a-entity camera></a-entity>
+    <a-entity id="main-camera" camera="far: 10000; near: 0.1;"></a-entity>
 
 </a-scene>
 
 <script>
-    // --- 1. COMPONENTE GHOST ---
+    // --- 1. LOOK-AT VERTICALE ---
+    AFRAME.registerComponent('vertical-look-at', {
+        tick: function () {
+            const target = document.querySelector('#main-camera');
+            if (!target) return;
+            const targetPos = target.object3D.position;
+            const myPos = this.el.object3D.position;
+            this.el.object3D.lookAt(targetPos.x, myPos.y, targetPos.z);
+        }
+    });
+
+    // --- 2. KEEP VISIBLE ---
     AFRAME.registerComponent('keep-visible', {
         init: function () {
             let entity = this.el.querySelector('#personaggio');
@@ -85,7 +103,7 @@
         }
     });
 
-    // --- 2. FUNZIONE CAMBIO POSA RANDOM ---
+    // --- 3. CAMBIO POSA RANDOM ---
     function cambiaPosaRandom() {
         const personaggio = document.querySelector("#personaggio");
         const pose = ["#posa1", "#posa2", "#posa3", "#posa4", "#posa5", "#posa6"];
@@ -93,7 +111,7 @@
         personaggio.setAttribute("material", "src", scelta);
     }
 
-    // --- 3. LOGICA PULSANTE (Countdown 1s) ---
+    // --- 4. LOGICA PULSANTE, FLASH E SUONO ---
     const btn = document.getElementById("scatta");
     const countdownEl = document.getElementById("countdown");
     const flashEl = document.getElementById("flash");
@@ -105,7 +123,7 @@
 
         cambiaPosaRandom();
 
-        // COUNTDOWN IMPOSTATO A 1 SECONDO
+        // Countdown
         for(let i=0; i>0; i--){
             countdownEl.style.display="block";
             countdownEl.innerText=i;
@@ -113,18 +131,21 @@
         }
         countdownEl.style.display="none";
 
+        // EFFETTO FLASH
         flashEl.classList.add("flash-active");
         setTimeout(() => { flashEl.classList.remove("flash-active"); }, 300);
-        
-        try { audioScatto.play(); } catch(e) { console.log("Audio non caricato"); }
 
+        // EFFETTO SUONO
+        audioScatto.play();
+
+        // ESECUZIONE SCATTO
         scattaFoto();
         
         btn.style.pointerEvents = "auto";
         btn.style.opacity = "1";
     };
 
-    // --- 4. LOGICA SCATTO FOTO ---
+    // --- 5. LOGICA SCATTO FOTO ---
     function scattaFoto(){
         const scene = document.querySelector("a-scene");
         const canvasAR = scene.canvas;
