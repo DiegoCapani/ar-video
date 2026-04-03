@@ -1,165 +1,30 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Selfie Pro - Ottimizzato Distanza</title>
-
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
-
-    <style>
-        body { margin:0; overflow:hidden; font-family:sans-serif; }
-        #scatta {
-            position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
-            width:85px; height:85px; border-radius:50%; background:white;
-            border:6px solid black; z-index:999; cursor: pointer;
-        }
-        #countdown {
-            position:fixed; top:40%; width:100%; text-align:center;
-            font-size:120px; color:white; text-shadow:0 0 20px black;
-            font-weight: bold; z-index:1000; display:none; pointer-events: none;
-        }
-    </style>
 </head>
+<body style="margin: 0; overflow: hidden;">
 
-<body>
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        
+        <a-assets>
+            <img id="mio-personaggio" src="assets/luzzetti_1.png" crossorigin="anonymous">
+        </a-assets>
 
-<div id="scatta"></div>
-<div id="countdown"></div>
+        <a-marker preset="hiro">
+            <a-plane 
+                position="0 0 0" 
+                rotation="-90 0 0" 
+                width="1" 
+                height="1.75"
+                material="src: #mio-personaggio; transparent: true; alphaTest: 0.5; shader: flat;">
+            </a-plane>
+        </a-marker>
 
-<a-scene
-    embedded
-    vr-mode-ui="enabled:false"
-    renderer="logarithmicDepthBuffer:true; alpha:true; preserveDrawingBuffer:true; antialias: true;"
-    arjs="sourceType:webcam; trackingMethod:best; debugUIEnabled:false; canvasWidth:1280; canvasHeight:720;">
-
-    <a-assets>
-        <a-asset-item id="artista" src="assets/luzzetti.glb"></a-asset-item>
-    </a-assets>
-
-    <a-marker preset="hiro" 
-              smooth="true" 
-              smoothCount="10" 
-              keep-visible
-              id="marker">
-
-        <a-light type="ambient" intensity="1.2"></a-light>
-        <a-light type="directional" position="1 3 2" intensity="0.8"></a-light>
-
-        <a-entity id="wrapper" rotation="-90 0 0">
-            <a-entity
-                id="personaggio"
-                gltf-model="#artista"
-                animation-mixer
-                position="0 0 0"
-                scale="17 17 17" 
-                vertical-look-at>
-            </a-entity>
-        </a-entity>
-
-    </a-marker>
-
-    <a-entity id="main-camera" camera="far: 10000; near: 0.1;"></a-entity>
-
-</a-scene>
-
-<script>
-    // COMPONENTE PER NON FAR SPARIRE IL MODELLO (Ghost Effect)
-    AFRAME.registerComponent('keep-visible', {
-        init: function () {
-            let marker = this.el;
-            let entity = this.el.querySelector('#wrapper');
-            
-            marker.addEventListener('markerFound', function() {
-                entity.setAttribute('visible', true);
-            });
-
-            marker.addEventListener('markerLost', function() {
-                // Quando perdi il marker, forziamo l'entità a restare visibile
-                // nell'ultima posizione nota invece di sparire
-                entity.setAttribute('visible', true);
-            });
-        }
-    });
-
-    // COMPONENTE LOOK-AT VERTICALE
-    AFRAME.registerComponent('vertical-look-at', {
-        tick: function () {
-            const target = document.querySelector('#main-camera');
-            if (!target) return;
-            const targetPos = target.object3D.position;
-            const myPos = this.el.object3D.position;
-            this.el.object3D.lookAt(targetPos.x, myPos.y, targetPos.z);
-        }
-    });
-
-    // LOGICA SCATTO E COUNTDOWN
-    const btn = document.getElementById("scatta");
-    const countdownEl = document.getElementById("countdown");
-
-    btn.onclick = async () => {
-        btn.style.pointerEvents = "none";
-        for(let i=3; i>0; i--){
-            countdownEl.style.display="block";
-            countdownEl.innerText=i;
-            await new Promise(r=>setTimeout(r,1000));
-        }
-        countdownEl.style.display="none";
-        scattaFoto();
-        btn.style.pointerEvents = "auto";
-    };
-
-    function scattaFoto(){
-        const scene = document.querySelector("a-scene");
-        const canvasAR = scene.canvas;
-        const video = document.querySelector("#arjs-video") || document.querySelector("video");
-        const outW = 1080;
-        const outH = 1920;
-        const canvasFinale = document.createElement("canvas");
-        canvasFinale.width = outW;
-        canvasFinale.height = outH;
-        const ctx = canvasFinale.getContext("2d");
-
-        const vW = video.videoWidth;
-        const vH = video.videoHeight;
-        const targetRatio = outW/outH;
-        const videoRatio = vW/vH;
-
-        let sx, sy, sw, sh;
-        if(videoRatio > targetRatio){
-            sw = vH * targetRatio; sh = vH;
-            sx = (vW - sw) / 2; sy = 0;
-        } else {
-            sw = vW; sh = vW / targetRatio;
-            sx = 0; sy = (vH - sh) / 2;
-        }
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
-
-        scene.renderer.render(scene.object3D, scene.camera);
-
-        const cW = canvasAR.width;
-        const cH = canvasAR.height;
-        const canvasRatio = cW/cH;
-
-        let cx, cy, cw, ch;
-        if(canvasRatio > targetRatio){
-            cw = cH * targetRatio; ch = cH;
-            cx = (cW - cw) / 2; cy = 0;
-        } else {
-            cw = cW; ch = cW / targetRatio;
-            cx = 0; cy = (cH - ch) / 2;
-        }
-        ctx.drawImage(canvasAR, cx, cy, cw, ch, 0, 0, outW, outH);
-
-        const link = document.createElement("a");
-        link.download = "Selfie_AR_" + Date.now() + ".png";
-        link.href = canvasFinale.toDataURL("image/png");
-        link.click();
-    }
-</script>
+        <a-entity camera></a-entity>
+        
+    </a-scene>
 
 </body>
 </html>
