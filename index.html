@@ -55,20 +55,21 @@
         <img id="posa6" src="assets/luzzetti6.png" crossorigin="anonymous">
     </a-assets>
 
-    <a-marker preset="hiro" keep-visible id="marker">
-        <a-entity id="wrapper" rotation="0 0 0">
-            <a-plane
-                id="personaggio"
-                src="#posa1"
-                position="0 0 -0.5" 
-                width="17" 
-                height="17"
-                transparent="true"
-                alpha-test="0.5"
-                shader="flat">
-            </a-plane>
-        </a-entity>
-    </a-marker>
+<a-marker preset="hiro" keep-visible id="marker">
+    <a-entity id="wrapper" rotation="0 0 0">
+        <a-plane
+            id="personaggio"
+            src="#posa1"
+            position="0 0 0" 
+            rotation="-90 0 0" 
+            width="15" 
+            height="15"
+            transparent="true"
+            alpha-test="0.5"
+            shader="flat">
+        </a-plane>
+    </a-entity>
+</a-marker>
 
     <a-entity camera></a-entity>
 
