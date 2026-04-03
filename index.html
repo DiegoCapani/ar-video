@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>AR Selfie - Look-at Stabilizzato</title>
-
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
@@ -62,18 +62,17 @@
 
     <a-marker preset="hiro" keep-visible id="marker">
         <a-entity id="wrapper" rotation="0 0 0">
-            <a-plane
-                id="personaggio"
-                src="#posa1"
-                position="0 0.1 0" 
-                rotation="0 0 0" 
-                width="17" 
-                height="17"
-                transparent="true"
-                alpha-test="0.5"
-                shader="flat"
-                stabilized-look-at>
-            </a-plane>
+<a-plane
+    id="personaggio"
+    src="#posa1"
+    position="0 0.1 0" 
+    width="17" 
+    height="17"
+    transparent="true"
+    alpha-test="0.5"
+    shader="flat"
+    vertical-look-at>
+</a-plane>
         </a-entity>
     </a-marker>
 
@@ -84,17 +83,34 @@
 <script>
    
     // --- 1. LOOK-AT VERTICALE ---
-    AFRAME.registerComponent('vertical-look-at', {
-        tick: function () {
-            const target = document.querySelector('#main-camera');
-            if (!target) return;
-            const targetPos = target.object3D.position;
-            const myPos = this.el.object3D.position;
-          this.el.object3D.rotation.set(0, helper.rotation.y + 3.14, 0);
-          
-        }
-    });
+   AFRAME.registerComponent('vertical-look-at', {
+    tick: function () {
+        const target = document.querySelector('#main-camera');
+        if (!target) return;
 
+        // 1. Otteniamo la posizione della camera e dell'oggetto nel mondo
+        const targetPos = new THREE.Vector3();
+        const myPos = new THREE.Vector3();
+        target.object3D.getWorldPosition(targetPos);
+        this.el.object3D.getWorldPosition(myPos);
+
+        // 2. Calcoliamo la direzione verso la camera
+        const direction = new THREE.Vector3().subVectors(targetPos, myPos);
+
+        // 3. IMPORTANTISSIMO: Annulliamo la componente verticale (Y) della direzione
+        // Questo "costringe" il calcolo a ignorare se il telefono è alto, basso o inclinato
+        direction.y = 0;
+
+        // 4. Creiamo la rotazione finale
+        // Usiamo un oggetto di supporto per non mandare in tilt il sistema AR
+        const helper = new THREE.Object3D();
+        helper.lookAt(direction);
+
+        // 5. Applichiamo SOLO la rotazione Y al personaggio
+        // Lasciamo X e Z a 0 (niente effetto volante, niente taglio)
+        this.el.object3D.rotation.set(0, helper.rotation.y, 0);
+    }
+});
     // --- 2. KEEP VISIBLE ---
     AFRAME.registerComponent('keep-visible', {
         init: function () {
