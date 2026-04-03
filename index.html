@@ -92,13 +92,25 @@
 
 <script>
     // --- 1. LOOK-AT VERTICALE ---
+  // --- 1. LOOK-AT VERTICALE STABILIZZATO ---
     AFRAME.registerComponent('vertical-look-at', {
         tick: function () {
             const target = document.querySelector('#main-camera');
             if (!target) return;
-            const targetPos = target.object3D.position;
-            const myPos = this.el.object3D.position;
-            this.el.object3D.lookAt(targetPos.x, myPos.y, targetPos.z);
+
+            // 1. Prendiamo la posizione della camera e dell'oggetto
+            const targetPos = new THREE.Vector3();
+            target.object3D.getWorldPosition(targetPos);
+            
+            const myPos = new THREE.Vector3();
+            this.el.object3D.getWorldPosition(myPos);
+
+            // 2. Usiamo il metodo lookAt standard
+            this.el.object3D.lookAt(targetPos);
+
+            // 3. FORZIAMO la rotazione Z a 0 rispetto al marker
+            // Questo impedisce l'effetto "volante" quando ruoti il telefono
+            this.el.object3D.rotation.z = 0;
         }
     });
 
