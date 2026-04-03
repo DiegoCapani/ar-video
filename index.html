@@ -60,6 +60,8 @@
         <img id="posa4" src="assets/luzzetti4.png" crossorigin="anonymous">
         <img id="posa5" src="assets/luzzetti5.png" crossorigin="anonymous">
         <img id="posa6" src="assets/luzzetti6.png" crossorigin="anonymous">
+
+        <img id="shadowImg" src="assets/shadow.png" crossorigin="anonymous">
     </a-assets>
 
     <a-marker preset="hiro" keep-visible id="marker">
@@ -75,6 +77,16 @@
                 shader="flat"
                 vertical-look-at>
             </a-plane>
+            <a-plane
+    id="ombra"
+    src="#shadowImg"
+    position="0 0 0.01" 
+    width="10" 
+    height="10"
+    transparent="true"
+    opacity="0.7" 
+    shader="flat">
+</a-plane>
         </a-entity>
     </a-marker>
 
