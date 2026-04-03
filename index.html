@@ -98,7 +98,7 @@
             if (!target) return;
             const targetPos = target.object3D.position;
             const myPos = this.el.object3D.position;
-            this.el.object3D.lookAt(0, myPos.y, 0);
+            this.el.object3D.rotation.set(0, helper.rotation.y, 0);
         }
     });
 
