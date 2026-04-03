@@ -71,7 +71,7 @@
     smoothTolerance="0.01" 
     smoothThreshold="5">
        
-        <a-entity id="wrapper" rotation="90 0 90">
+        <a-entity id="wrapper" rotation="0 0 0">
             <a-plane
                 id="personaggio"
                 src="#posa1"
@@ -92,28 +92,15 @@
 
 <script>
     // --- 1. LOOK-AT VERTICALE ---
-   AFRAME.registerComponent('vertical-look-at', {
-    tick: function () {
-
-        const camera = document.querySelector('#main-camera');
-        if (!camera) return;
-
-        const camPos = new THREE.Vector3();
-        const objPos = new THREE.Vector3();
-
-        camera.object3D.getWorldPosition(camPos);
-        this.el.object3D.getWorldPosition(objPos);
-
-        // direzione solo sul piano orizzontale
-        const dx = camPos.x - objPos.x;
-        const dz = camPos.z - objPos.z;
-
-        const angle = Math.atan2(dx, dz);
-
-        // ruota SOLO sull'asse Y
-        this.el.object3D.rotation.set(0, angle, 0);
-    }
-});
+    AFRAME.registerComponent('vertical-look-at', {
+        tick: function () {
+            const target = document.querySelector('#main-camera');
+            if (!target) return;
+            const targetPos = target.object3D.position;
+            const myPos = this.el.object3D.position;
+            this.el.object3D.lookAt(targetPos.x, myPos.y, targetPos.z);
+        }
+    });
 
     // --- 2. KEEP VISIBLE ---
     AFRAME.registerComponent('keep-visible', {
