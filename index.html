@@ -116,7 +116,7 @@
             // X = 0 (parallelo al muro)
             // Y = angle (ti segue a destra/sinistra)
             // Z = 0 (BLOCCATO: niente effetto volante)
-            this.el.object3D.rotation.set(-90, angle, 0);
+           this.el.object3D.rotation.set(0, angle + Math.PI/2, 0);
         }
     });
 
