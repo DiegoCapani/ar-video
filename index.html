@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Selfie Pro - Plane Version</title>
+    <title>AR Selfie Pro - Ottimizzato Distanza</title>
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
@@ -37,7 +37,7 @@
     arjs="sourceType:webcam; trackingMethod:best; debugUIEnabled:false; canvasWidth:1280; canvasHeight:720;">
 
     <a-assets>
-       <img id="artista-img" src="assets/luzzetti.png" crossorigin="anonymous">
+        <a-asset-item id="artista" src="assets/luzzetti.glb"></a-asset-item>
     </a-assets>
 
     <a-marker preset="hiro" 
@@ -49,16 +49,16 @@
         <a-light type="ambient" intensity="1.2"></a-light>
         <a-light type="directional" position="1 3 2" intensity="0.8"></a-light>
 
-        <a-entity id="wrapper" rotation="0 0 0">
-        <a-plane
-            id="personaggio"
-            material="src: #artista-img; transparent: true; alphaTest: 0.5; shader: flat; side: double;"
-            position="0 0 0"
-            width="1" 
-            height="1.75"
-            vertical-look-at>
-        </a-plane>
-    </a-entity>
+        <a-entity id="wrapper" rotation="-90 0 0">
+            <a-entity
+                id="personaggio"
+                gltf-model="#artista"
+                animation-mixer
+                position="0 0 0"
+                scale="17 17 17" 
+                vertical-look-at>
+            </a-entity>
+        </a-entity>
 
     </a-marker>
 
@@ -78,6 +78,8 @@
             });
 
             marker.addEventListener('markerLost', function() {
+                // Quando perdi il marker, forziamo l'entità a restare visibile
+                // nell'ultima posizione nota invece di sparire
                 entity.setAttribute('visible', true);
             });
         }
@@ -111,4 +113,53 @@
     };
 
     function scattaFoto(){
-        const scene =
+        const scene = document.querySelector("a-scene");
+        const canvasAR = scene.canvas;
+        const video = document.querySelector("#arjs-video") || document.querySelector("video");
+        const outW = 1080;
+        const outH = 1920;
+        const canvasFinale = document.createElement("canvas");
+        canvasFinale.width = outW;
+        canvasFinale.height = outH;
+        const ctx = canvasFinale.getContext("2d");
+
+        const vW = video.videoWidth;
+        const vH = video.videoHeight;
+        const targetRatio = outW/outH;
+        const videoRatio = vW/vH;
+
+        let sx, sy, sw, sh;
+        if(videoRatio > targetRatio){
+            sw = vH * targetRatio; sh = vH;
+            sx = (vW - sw) / 2; sy = 0;
+        } else {
+            sw = vW; sh = vW / targetRatio;
+            sx = 0; sy = (vH - sh) / 2;
+        }
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
+
+        scene.renderer.render(scene.object3D, scene.camera);
+
+        const cW = canvasAR.width;
+        const cH = canvasAR.height;
+        const canvasRatio = cW/cH;
+
+        let cx, cy, cw, ch;
+        if(canvasRatio > targetRatio){
+            cw = cH * targetRatio; ch = cH;
+            cx = (cW - cw) / 2; cy = 0;
+        } else {
+            cw = cW; ch = cW / targetRatio;
+            cx = 0; cy = (cH - ch) / 2;
+        }
+        ctx.drawImage(canvasAR, cx, cy, cw, ch, 0, 0, outW, outH);
+
+        const link = document.createElement("a");
+        link.download = "Selfie_AR_" + Date.now() + ".png";
+        link.href = canvasFinale.toDataURL("image/png");
+        link.click();
+    }
+</script>
+
+</body>
+</html>
